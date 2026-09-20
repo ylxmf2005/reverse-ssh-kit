@@ -1,0 +1,6 @@
+PARSE OK: install.ps1
+PARSE OK: run-tunnel.ps1
+PARSE OK: uninstall.ps1
+PARSE OK: status.ps1
+CONFIG OK: 3 valid and 25 invalid inputs.
+Temporary test directory remains: False

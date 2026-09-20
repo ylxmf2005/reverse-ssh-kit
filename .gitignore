@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store
+bundles/
+deployments/
+*.pem
+*.key
+operator_key
+tunnel_key
+.env
+.env.*
+*.pub
+.agents/contract.md
