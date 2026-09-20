@@ -42,7 +42,7 @@ if (@(Get-NetTCPConnection -State Listen -LocalPort 22 -ErrorAction SilentlyCont
 
 New-PrivateDirectory $script:Root
 $s = [ordered]@{
-    schema_version = 1; owner = ('ReverseSshKit:' + [guid]::NewGuid().ToString()); phase = 'installing'
+    schema_version = 1; owner = ('ReverseSshKit:' + [guid]::NewGuid().ToString('N')); phase = 'installing'
     admin_access = [bool]$AdminAccess; bundle_hashes = $hashes; user_sid = ''; profile = ''
     authorized_keys = ''; authorized_keys_hash = ''; sshd_config_hash = ''; host_public_hash = ''
     service_start_mode = ''; service_delayed_auto = $null; service_changed = $false; ssh_dir_created = $false

@@ -92,7 +92,7 @@ function Get-KitState {
     Assert-SafeAcl $script:Root -Private
     Assert-SafeAcl $script:StatePath -Private
     $state = Get-Content -Raw -LiteralPath $script:StatePath | ConvertFrom-Json
-    if ($state.schema_version -ne 1 -or $state.owner -notmatch '^ReverseSshKit:[0-9a-f-]{36}$') { throw 'Invalid installation ownership record.' }
+    if ($state.schema_version -ne 1 -or $state.owner -notmatch '^ReverseSshKit:[0-9a-f]{32}$') { throw 'Invalid installation ownership record.' }
     return $state
 }
 

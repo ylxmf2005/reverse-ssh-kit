@@ -68,14 +68,15 @@ The initial private staging commit c9fe005 passed all three GitHub Actions jobs:
 
 ### TC-007 - Disposable hosted Windows installation - partial
 
-Added a strongly gated hosted-Windows-only integration fixture for ordinary-user and AdminAccess cases on separate fresh VMs. It includes real installation, ACL/effective settings, SSH/SFTP, refused-relay retry behavior, idempotence and uninstall readback. Execution is pending; no success is claimed yet.
+Added a strongly gated hosted-Windows-only integration fixture for ordinary-user and AdminAccess cases on separate fresh VMs. It includes real installation, ACL/effective settings, SSH/SFTP, refused-relay retry behavior, idempotence and uninstall readback. First run 35502076678 failed in both privilege modes: New-LocalUser rejected the 50-character description (maximum 48). The ownership marker now uses an unhyphenated GUID, preserving its identity entropy in 46 characters; the state validator matches that format. Rollback completed in the failed runs. The fix is being rerun; no successful installation is claimed yet.
 
 ## Failures, gaps and retest scope
 
 - Historical red: TC-001 temporary-path test fixture, corrected and rerun.
 - Review finding: trailing-dot DNS contract mismatch, fixed and independently closed.
 - Unproven: Windows first installation/runtime ACLs and physical reboot, network loss, battery and sleep recovery.
-- Pending: a disposable Windows installation fixture and its hosted CI execution.
+- Historical runtime failure: Windows account description length, fixed; awaiting rerun.
+- Pending: disposable Windows installation fixture CI.
 
 ## Cleanup proof
 
