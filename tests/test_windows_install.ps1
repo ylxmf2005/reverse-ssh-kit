@@ -106,8 +106,8 @@ try {
     $null = Run (Join-Path $script:OpenSsh 'sftp.exe') ($options + ' -b "' + $batch + '" rskremote@127.0.0.1')
     Check ((Get-FileHash (Join-Path $work 'input.txt')).Hash -eq (Get-FileHash (Join-Path $work 'output.txt')).Hash) 'SFTP round-trip differs.'
     $deadline = (Get-Date).AddSeconds(90); $log = ''
-    do { Start-Sleep 2; if (Test-Path (Join-Path $script:Root 'tunnel.log')) { $log = Get-Content -Raw (Join-Path $script:Root 'tunnel.log') } } while (([regex]::Matches($log, '\[ATTEMPT\]').Count -lt 2) -and (Get-Date) -lt $deadline)
-    Check ($log -match 'Connection refused|Connection timed out' -and $log -match 'ssh exited with code 255' -and [regex]::Matches($log, '\[ATTEMPT\]').Count -ge 2 -and $log -notmatch 'CONFIGURATION') "Negative reconnect not demonstrated: $log"
+    do { Start-Sleep 2; if (Test-Path (Join-Path $script:Root 'tunnel.log')) { $log = Get-Content -Raw (Join-Path $script:Root 'tunnel.log') } } while (([regex]::Matches($log, 'ssh exited with code 255').Count -lt 2) -and (Get-Date) -lt $deadline)
+    Check (@(Get-NetTCPConnection -State Listen -LocalPort 65432 -ErrorAction SilentlyContinue).Count -eq 0 -and [regex]::Matches($log, 'ssh exited with code 255').Count -ge 2 -and [regex]::Matches($log, '\[ATTEMPT\]').Count -ge 2 -and $log -notmatch 'CONFIGURATION') "Negative reconnect not demonstrated: $log"
     Check ((Get-ScheduledTask ReverseSshKit).State -eq 'Running') 'Task is not running.'
     [xml]$task = Export-ScheduledTask ReverseSshKit
     Check ($task.Task.Settings.ExecutionTimeLimit -eq 'PT0S' -and $task.Task.Settings.MultipleInstancesPolicy -eq 'IgnoreNew') 'Task runtime/single-instance policy differs.'
