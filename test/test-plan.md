@@ -50,7 +50,7 @@
 ### TC-003 — Native Windows parser and input validation
 - 优先级：P0。
 - 实际动作：Windows PowerShell 5.1 执行 `tests/test_windows.ps1`。
-- 预期：四个脚本解析成功；3个合法配置接受、24个非法配置拒绝；不安装服务或修改账号。
+- 预期：四个脚本解析成功；3个合法配置接受、25个非法配置拒绝；不安装服务或修改账号。
 - 清理：测试临时 JSON 由 finally 删除；额外传输的测试目录由操作者删除。
 - 证据边界：只证明语法及纯函数校验。
 
@@ -83,3 +83,13 @@ TC-001/002/003 可并行；TC-005 复核最终代码后才能公开推送；TC-0
 ## 计划攻击与开放缺口
 
 即使自动化全绿，Windows服务注册、权限、恢复或卸载仍可能错误。因此初始发布必须保留 TC-004 未验证说明；不能宣称已完成生产稳定性验收。
+
+### TC-007 — Disposable hosted Windows installation
+
+- Priority: P0 for installation claims, distinct from physical lifecycle TC-004.
+- Environment: a fresh GitHub-hosted Windows 2022 VM per matrix case, elevated Windows PowerShell 5.1; false/true AdminAccess cases are isolated.
+- Action: `tests/test_windows_install.ps1` creates temporary per-device keys outside the checkout, installs the Windows capability implementation, authenticates through loopback SSH, transfers a file through SFTP, observes repeated refused-relay attempts, checks task/effective-policy/ACL settings, repeats installation, then uninstalls and reads back ownership cleanup.
+- Safety: strong hosted-runner gates; stock default sshd configuration is removed only when its hash matches the capability default. Never invoke on a personal/self-hosted computer.
+- Expected: the permitted operator authenticates, privilege matches the switch, only loopback listens, retry/task settings are present, repeated enrollment is idempotent and owned resources disappear on uninstall. Capability failure is BLOCKED/failed, never a pass.
+- Cleanup: finally removes test keys and owned task/processes; the hosted VM is disposed by GitHub. No private artifacts are uploaded.
+- Evidence boundary: this does not prove physical reboot, sleep, battery transitions or successful relay reconnection on a desktop Windows device. Linux tests separately prove the relay path.

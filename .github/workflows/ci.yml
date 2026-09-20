@@ -24,3 +24,20 @@ jobs:
       - name: Windows PowerShell 5.1 parser and pure configuration tests
         shell: powershell
         run: .\tests\test_windows.ps1
+  windows-install:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        admin: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install, authenticate, retry and revoke on a disposable Windows VM
+        shell: powershell
+        env:
+          TEST_ADMIN: ${{ matrix.admin }}
+        run: |
+          $options = @{}
+          if ($env:TEST_ADMIN -eq 'true') { $options.AdminAccess = $true }
+          & "$env:GITHUB_WORKSPACE\tests\test_windows_install.ps1" @options
