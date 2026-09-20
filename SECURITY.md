@@ -8,4 +8,4 @@ Relay loopback binding prevents remote direct access, but processes already on t
 
 The v1 Windows installer requires a fresh or already-managed OpenSSH setup. It refuses to take over an unrelated sshd configuration, account or scheduled task. Do not disable those checks to "fix" installation. The relay sets GatewayPorts=no; use a dedicated relay if existing deployments require publicly bound SSH reverse forwards.
 
-Do not publish an exploit with credentials or target addresses. Report a reproducible issue using documentation IPs and disposable devices. This initial release has not yet completed a physical Windows reboot/sleep/power-loss acceptance cycle; see the test report before relying on it for unattended critical maintenance.
+Do not publish an exploit with credentials or target addresses. Report a reproducible issue using documentation IPs and disposable devices. Hosted Windows Server 2022 installation/authentication/cleanup tests pass in standard and administrator modes. This initial release has not yet completed a physical Windows 10/11 reboot/sleep/power-loss acceptance cycle; see the test report before relying on it for unattended critical maintenance.

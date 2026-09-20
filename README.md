@@ -4,7 +4,7 @@
 
 本项目把原生 OpenSSH、Windows 服务和任务计划程序组成一套部署流程。Mac/Linux 管理端生成每台设备的登记材料，Linux 中继限制转发端口，Windows 主动连接中继。没有自研隧道协议、常驻 Web 管理面板或第三方控制面。
 
-**初始版本：请先在备用 Windows 设备验证。** 自动化测试覆盖材料生成、SSH 权限与撤销、PowerShell 解析和配置校验；真实 Windows 首次安装、重启、电池与睡眠唤醒仍需要设备上的验收。已有其他工具管理的 Windows SSH 配置会被明确拒绝接管。
+**初始版本：请先在备用 Windows 设备验证。** 五项 CI 已通过，包含 GitHub Windows Server 2022 虚拟机上的普通用户/管理员真实安装、密钥登录、SFTP、离线重试和卸载，以及 Linux 中继集成测试。实体 Windows 10/11 电脑首次接入、重启、电池与睡眠唤醒仍需现场验收。已有其他工具管理的 Windows SSH 配置会被明确拒绝接管。
 
 ```text
 管理端 Mac/Linux ──SSH──> Linux 公网中继

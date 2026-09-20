@@ -3,9 +3,9 @@
 ## Overall conclusion
 
 - Status: partial.
-- Delivery: suitable as an explicitly limited initial test release after hosted CI passes; physical Windows lifecycle reliability is not yet accepted.
+- Delivery: suitable as an explicitly limited initial test release with hosted CI passing; physical Windows lifecycle reliability is not yet accepted.
 - Evidence: operator tests, 13 groups of real Linux SSH integration, native Windows parser/config validation, and independent review have passed.
-- Object: the initial repository implementation, with the DNS-contract fix included. The initial hosted CI passed Python, relay, and native Windows jobs. A deeper Windows install fixture is being added.
+- Object: the initial repository implementation, with the DNS-contract fix included. All five hosted CI jobs pass at code commit 2f546dde9e00d087b77875a72845c2c840e620f6: Python, relay, native Windows parsing, standard-user installation, and administrator installation.
 
 ## Environments
 
@@ -33,8 +33,8 @@
 | TC-003 | Windows parser/config | passed | 4 scripts; 3 accepted / 25 rejected inputs |
 | TC-004 | Physical Windows lifecycle | blocked | No fresh spare Windows target available |
 | TC-005 | Review/publication hygiene | passed | P2 fixed; no evidenced P0/P1; source scan clear |
-| TC-006 | Hosted CI | passed | Initial Python/relay/Windows jobs all succeeded |
-| TC-007 | Disposable Windows installation | partial | New two-VM matrix submitted; result pending |
+| TC-006 | Hosted CI | passed | All five jobs succeeded on the final implementation |
+| TC-007 | Disposable Windows installation | passed | Fresh Windows Server 2022 VMs, standard and admin modes |
 
 ## Execution records
 
@@ -64,23 +64,24 @@ Scanned prospective tracked content for private deployment addresses/domains, pe
 
 ### TC-006 - Hosted CI - passed
 
-The initial private staging commit c9fe005 passed all three GitHub Actions jobs: Python, relay, and native Windows parser/config. Run: https://github.com/ylxmf2005/reverse-ssh-kit/actions/runs/35501817415 . Further runtime test changes must receive their own CI evidence.
+Initial three-job CI succeeded at c9fe005. The final five-job run 35503097910 at code commit 2f546dde9e00d087b77875a72845c2c840e620f6 succeeded, including both real Windows install modes. Evidence: https://github.com/ylxmf2005/reverse-ssh-kit/actions/runs/35503097910 . Final publication changes are documentation only; implementation and test sources are identical to this run.
 
-### TC-007 - Disposable hosted Windows installation - partial
+### TC-007 - Disposable hosted Windows installation - passed
 
-Added a strongly gated hosted-Windows-only integration fixture for ordinary-user and AdminAccess cases on separate fresh VMs. It includes real installation, ACL/effective settings, SSH/SFTP, refused-relay retry behavior, idempotence and uninstall readback. First run 35502076678 failed in both privilege modes: New-LocalUser rejected the 50-character description (maximum 48). The ownership marker now uses an unhyphenated GUID, preserving its identity entropy in 46 characters; the state validator matches that format. Rollback completed in the failed runs. The next run 35502193913 progressed past account creation but CreateProfile returned 0x800706f7 with a 1024-character buffer. The buffer is now MAX_PATH (260), matching the Win32-OpenSSH reference usage, with capacity passed directly. Run 35502343042 successfully completed installation in both modes, then an assertion about the optional keyboard-interactive field failed; accepting a legacy alias also did not match. The fixture now prints the actual authentication policy and verifies the meaningful boundary directly: AuthenticationMethods=publickey, PasswordAuthentication=no, successful key login, and a real denied password/keyboard-interactive-only SSH attempt. Run 35502765593 then passed installation, ACLs, real key login, rejected non-key authentication and SFTP in both modes. It failed only because the retry assertion required an English stderr phrase that the SYSTEM child did not emit. Retry verification now requires two observed failed SSH exits and fresh launches against a port verified to have no listener; localized/absent wording is not used as the behavioral proof. Idempotence and final uninstall checks are being rerun.
+Added a strongly gated hosted-Windows-only integration fixture for ordinary-user and AdminAccess cases on separate fresh VMs. It includes real installation, ACL/effective settings, SSH/SFTP, refused-relay retry behavior, idempotence and uninstall readback. First run 35502076678 failed in both privilege modes: New-LocalUser rejected the 50-character description (maximum 48). The ownership marker now uses an unhyphenated GUID, preserving its identity entropy in 46 characters; the state validator matches that format. Rollback completed in the failed runs. The next run 35502193913 progressed past account creation but CreateProfile returned 0x800706f7 with a 1024-character buffer. The buffer is now MAX_PATH (260), matching the Win32-OpenSSH reference usage, with capacity passed directly. Run 35502343042 successfully completed installation in both modes, then an assertion about the optional keyboard-interactive field failed; accepting a legacy alias also did not match. The fixture now prints the actual authentication policy and verifies the meaningful boundary directly: AuthenticationMethods=publickey, PasswordAuthentication=no, successful key login, and a real denied password/keyboard-interactive-only SSH attempt. Run 35502765593 then passed installation, ACLs, real key login, rejected non-key authentication and SFTP in both modes. It failed only because the retry assertion required an English stderr phrase that the SYSTEM child did not emit. Retry verification now requires two observed failed SSH exits and fresh launches against a port verified to have no listener; localized/absent wording is not used as the behavioral proof. Run 35503097910 then passed the full fixture in both modes, including idempotence and final cleanup. Actual effective output on this Windows build retains keyboard-interactive fields as yes despite the option; AuthenticationMethods=publickey and PasswordAuthentication=no are the enforced boundary, verified together with successful key auth and a denied non-key-only attempt. The latter uses BatchMode and is not treated alone as proof of server policy.
 
 ## Failures, gaps and retest scope
 
 - Historical red: TC-001 temporary-path test fixture, corrected and rerun.
 - Review finding: trailing-dot DNS contract mismatch, fixed and independently closed.
-- Unproven: Windows first installation/runtime ACLs and physical reboot, network loss, battery and sleep recovery.
-- Historical runtime failure: Windows account description length, fixed; awaiting rerun.
-- Pending: disposable Windows installation fixture CI.
+- Proven on hosted Windows Server 2022: first installation, effective policy/ACLs, key login, SFTP, refused-relay retries, task settings, idempotence and ownership-checked uninstall in both privilege modes.
+- Unproven: physical Windows 10/11 first enrollment and actual reboot, network restoration, battery transitions and sleep recovery.
+- Historical runtime failures: account-description length and oversized CreateProfile buffer; both fixed and complete fixtures now pass.
+- Fixture corrections: optional authentication-field presentation and stderr wording assertions were replaced with the relevant effective-policy and observed runtime boundaries; complete fixtures now pass.
 
 ## Cleanup proof
 
-Python temporary directories were removed. Linux test containers/images were removed. The Windows transfer directory was removed with a False existence readback. No changes were made to existing production SSH configurations.
+Python temporary directories were removed. Linux test containers/images were removed. The Windows transfer directory was removed with a False existence readback. Hosted Windows fixture finally blocks completed, temporary key directories and owned registrations were cleaned, and the runners were disposed. No changes were made to existing production SSH configurations.
 
 ## Replay entrypoints
 
@@ -88,4 +89,4 @@ See [TestPlan](test-plan.md), tests/, and .github/workflows/ci.yml. Public evide
 
 ## Handoff
 
-Current scope supports publishing an initial test release after CI. Use a spare Windows target for physical lifecycle acceptance before relying on unattended recovery for critical work.
+Current scope supports publishing an initial test release with all five CI jobs passing. Use a spare Windows target for physical lifecycle acceptance before relying on unattended recovery for critical work.
