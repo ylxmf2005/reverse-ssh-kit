@@ -18,7 +18,7 @@ if ((Test-Path $script:Root) -or (Get-LocalUser rskremote -ErrorAction SilentlyC
     (Get-ScheduledTask -TaskName ReverseSshKit -TaskPath '\' -ErrorAction SilentlyContinue)) { throw 'BLOCKED: VM is not fresh.' }
 $sentinel = [IO.File]::Open((Join-Path $env:RUNNER_TEMP 'rsk-install-test.started'), [IO.FileMode]::CreateNew); $sentinel.Dispose()
 function Check([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
-function Run([string]$Exe, [string]$Arguments) {
+function Run([string]$Exe, [string]$Arguments, [bool]$ExpectAuthDenial = $false) {
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $Exe; $info.Arguments = $Arguments; $info.UseShellExecute = $false; $info.CreateNoWindow = $true
     $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true
@@ -27,6 +27,10 @@ function Run([string]$Exe, [string]$Arguments) {
         $out = $p.StandardOutput.ReadToEndAsync(); $err = $p.StandardError.ReadToEndAsync()
         if (-not $p.WaitForExit(300000)) { $p.Kill(); $p.WaitForExit(); throw "Timed out: $Exe" }
         $text = $out.GetAwaiter().GetResult(); $errorText = $err.GetAwaiter().GetResult()
+        if ($ExpectAuthDenial) {
+            Check ($p.ExitCode -ne 0 -and $errorText -match 'Permission denied') "Expected authentication denial: $errorText $text"
+            return $errorText
+        }
         Check ($p.ExitCode -eq 0) "$Exe exited $($p.ExitCode): $errorText $text"
         return $text
     } finally { $p.Dispose() }
@@ -87,8 +91,7 @@ try {
     foreach ($setting in @('authenticationmethods publickey', 'pubkeyauthentication yes', 'passwordauthentication no', 'allowusers rskremote', 'disableforwarding yes')) {
         Check ($effective -match ('(?m)^' + [regex]::Escape($setting) + '\r?$')) "Unexpected effective setting: $setting"
     }
-    # Older Windows capability builds print the legacy canonical option name.
-    Check ($effective -match '(?m)^(?:kbdinteractiveauthentication|challengeresponseauthentication) no\r?$') 'Keyboard-interactive authentication is not disabled.'
+    Write-Output ($effective -split "`n" | Where-Object { $_ -match 'authentication|allowusers|disableforwarding' })
     $allowed = @('S-1-5-18', 'S-1-5-32-544')
     foreach ($path in @($script:Root, $script:StatePath, (Join-Path $script:Root 'tunnel_key'), (Join-Path $script:Root 'ssh_host_ed25519_key'))) { CheckAcl $path $allowed }
     if (-not $AdminAccess) { $allowed += $state.user_sid }; CheckAcl $state.authorized_keys $allowed
@@ -97,6 +100,7 @@ try {
     $known = Join-Path $work 'known_hosts'; Write-Utf8 $known ('127.0.0.1 ' + (Get-Content -Raw (Join-Path $script:Root 'ssh_host_ed25519_key.pub')).Trim() + "`n")
     $options = '-F NUL -o BatchMode=yes -o StrictHostKeyChecking=yes -o GlobalKnownHostsFile=NUL -o IdentitiesOnly=yes -o IdentityAgent=none -o ConnectTimeout=10 -o "UserKnownHostsFile=' + $known + '" -i "' + (Join-Path $work 'operator_key') + '"'
     Check ((Run (Join-Path $script:OpenSsh 'ssh.exe') ($options + ' rskremote@127.0.0.1 hostname')).Trim() -ieq $env:COMPUTERNAME) 'Key-authenticated hostname failed.'
+    $null = Run (Join-Path $script:OpenSsh 'ssh.exe') ($options + ' -o PubkeyAuthentication=no -o PreferredAuthentications=keyboard-interactive,password -o NumberOfPasswordPrompts=0 rskremote@127.0.0.1 hostname') $true
     Write-Utf8 (Join-Path $work 'input.txt') ('round-trip-' + [guid]::NewGuid()); $unix = $work.Replace('\', '/')
     $batch = Join-Path $work 'sftp.batch'; Write-Utf8 $batch "put `"$unix/input.txt`" rsk-ci-probe.txt`nget rsk-ci-probe.txt `"$unix/output.txt`"`nrm rsk-ci-probe.txt`n"
     $null = Run (Join-Path $script:OpenSsh 'sftp.exe') ($options + ' -b "' + $batch + '" rskremote@127.0.0.1')
