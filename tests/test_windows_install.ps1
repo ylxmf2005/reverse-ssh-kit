@@ -84,9 +84,11 @@ try {
     $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 22)
     Check ($listeners.Count -eq 1 -and $listeners[0].LocalAddress -eq '127.0.0.1') 'sshd is not exclusively loopback.'
     $effective = Run (Join-Path $script:OpenSsh 'sshd.exe') ('-T -f "' + $script:SshConfig + '" -C user=rskremote,host=localhost,addr=127.0.0.1')
-    foreach ($setting in @('authenticationmethods publickey', 'pubkeyauthentication yes', 'passwordauthentication no', 'kbdinteractiveauthentication no', 'allowusers rskremote', 'disableforwarding yes')) {
+    foreach ($setting in @('authenticationmethods publickey', 'pubkeyauthentication yes', 'passwordauthentication no', 'allowusers rskremote', 'disableforwarding yes')) {
         Check ($effective -match ('(?m)^' + [regex]::Escape($setting) + '\r?$')) "Unexpected effective setting: $setting"
     }
+    # Older Windows capability builds print the legacy canonical option name.
+    Check ($effective -match '(?m)^(?:kbdinteractiveauthentication|challengeresponseauthentication) no\r?$') 'Keyboard-interactive authentication is not disabled.'
     $allowed = @('S-1-5-18', 'S-1-5-32-544')
     foreach ($path in @($script:Root, $script:StatePath, (Join-Path $script:Root 'tunnel_key'), (Join-Path $script:Root 'ssh_host_ed25519_key'))) { CheckAcl $path $allowed }
     if (-not $AdminAccess) { $allowed += $state.user_sid }; CheckAcl $state.authorized_keys $allowed
