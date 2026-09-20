@@ -135,8 +135,9 @@ public static class RskUserProfile {
 }
 '@
     }
-    $profileBuffer = New-Object Text.StringBuilder 1024
-    $hr = [RskUserProfile]::CreateProfile($s.user_sid, 'rskremote', $profileBuffer, 1024)
+    # CreateProfile's RPC contract requires a MAX_PATH-sized output buffer.
+    $profileBuffer = New-Object Text.StringBuilder 260
+    $hr = [RskUserProfile]::CreateProfile($s.user_sid, 'rskremote', $profileBuffer, $profileBuffer.Capacity)
     if ($hr -ne 0) { throw "Could not create a fresh user profile (HRESULT $hr)." }
     $s.profile = $profileBuffer.ToString(); Save-State $s
     if ($AdminAccess) {
